@@ -6,7 +6,7 @@
 #include <tuple>
 #include <functional>
 #include <math.h>
-#include "mpreal.h"
+#include <mpreal.h>
 
 #ifndef FAD_H_
 #define FAD_H_
@@ -27,6 +27,7 @@ public:
   mpreal data;
   mpreal grad;
   Function* genertr;
+  int order;
   Variable(const double data);
   Variable(const mpreal data);
   Variable();
@@ -83,7 +84,7 @@ class Sqrt : public Function{
 class Exp : public Function{
   mpreal forward();
 
-  std::vector<Variable*>& backward(const mpreal gy);
+  std::vector<Variable*>& backward(const mpreal gy);  
 };
 
 class Log : public Function{
@@ -95,7 +96,7 @@ class Log : public Function{
 class Sin : public Function{
   mpreal forward();
 
-  std::vector<Variable*>& backward(const mpreal gy);
+  std::vector<Variable*>& backward(const mpreal gy);  
 };
 
 class Cos : public Function{

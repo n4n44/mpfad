@@ -1,11 +1,11 @@
 #include <iostream>
-#include <deque>
+#include <queue>
 #include <unordered_set>
 #include <vector>
 #include <tuple>
 #include <functional>
 #include <math.h>
-#include "mpreal.h"
+#include <mpreal.h>
 
 #include "fad.hpp"
 using mpfr::mpreal;
@@ -49,16 +49,18 @@ auto enumerate(TYPE& inputs){
 Variable::Variable(const double input){
   data = mpreal(input);
   grad = mpreal(1);
+  order = 0;
   genertr = nullptr;
 }
 
-Variable::Variable(const mpreal data):data(data),grad(1.0),genertr(nullptr){
+Variable::Variable(const mpreal data):data(data),grad(1.0),order(0),genertr(nullptr){
   
 }
 
 Variable::Variable(){
   data = 0;
   grad = 0;
+  order = 0;
   genertr = nullptr;
 }
 
@@ -82,41 +84,49 @@ void Variable::backward(){
   if(genertr == nullptr){
     return;
   }
-
+  
+  auto compare = [](Variable* a, Variable* b){
+		   return a->order < b->order;
+		 };
+  
   std::unordered_set<size_t> visited;
-  std::deque<Function*> queue{genertr};
+  std::priority_queue<Variable*,std::vector<Variable*>,decltype(compare)> queue{compare};
+  queue.push(this);
+
+  int depth = 0;
 
   while(!queue.empty()){
-    Function* function = queue.front();
-    Variable* output = function->output;
-
+    Variable* output = queue.top();
+    Function* function = output->genertr;
     mpreal gy = output->grad;
+    std::cout << "output.data "<< output->data  << " output.order " << output->order << std::endl;
     std::vector<Variable*>& gxs = function->backward(gy); //返り値はvector<variable*>
-    //std::cout<<gxs[0]<<std::endl;
-    queue.pop_front();
-
-    for(auto [i,gx] : enumerate(gxs)){
+    queue.pop();
+    //std::cout<< "depth " << depth << std::endl;
+    for(const auto& [i,gx] : enumerate(gxs)){
       Variable* x = function->inputs[i];
       if(gx == nullptr){
 	continue;
       }
-
+      //function->whoami();
       std::size_t id_x = std::hash<Variable*>{}(x);
       if(x->genertr != nullptr){
-	std::cout<< "cp1 " <<  x->data << ", "<< x->grad<< std::endl;
-	queue.push_back(x->genertr);
+	if(visited.find(id_x) == visited.end()){
+	  queue.push(x);	
+	}
       }
-
+      //std::cout<< "gx.data " << gx->data << std::endl;
       if(visited.find(id_x) == visited.end()){
-	std::cout<< "cp2 " << x->data << ", "<< x->grad<< std::endl;
 	x->grad = gx->data;
+	std::cout<< "cp1 " << x->data << ", "<< x->grad<< std::endl;
 	visited.insert(id_x);
       }
       else{
-	std::cout<< "cp3 " << x->data << ", "<< x->grad<< std::endl;
 	x->grad += gx->data;
+	std::cout<< "cp2 " << x->data << ", "<< x->grad << std::endl;
       }
     }
+    depth++;
   }
 }
 
@@ -126,9 +136,11 @@ void Variable::backward(){
 
 Variable* Function::operator()(Function *self, Variable* input1, Variable* input2 = nullptr){
   inputs = {input1, input2};
+  int ord = std::max({input1->order, input2->order});
   const mpreal y = forward();
   output = new Variable(y);
   output->set_genertr(self);
+  output->order=ord+1;
   return output;
 }
 
@@ -232,7 +244,6 @@ std::vector<Variable*>& Sin::backward(const mpreal gy){
   std::vector<Variable*>* ret =new std::vector<Variable*>{d1,nullptr};
   return *ret;
 }
-
 // Cosクラスの定義
 mpreal Cos::forward(){
   return exp(inputs[0]->data);
@@ -285,42 +296,3 @@ Variable& cos(Variable& op){
   Function* func =new Cos();
   return *(func->operator()(func, &op));
 }
-
-
-// int main(){
-//   mpreal::set_default_prec(113);
-//   const int digits = 20;
-//   std::cout.precision(digits);
-//   mpreal x("2.5");
-//   mpreal y("1.2");
-//   Variable X(x);
-//   Variable Y(y);
-//   //Variable V1,V2;
-//   // Variable* V2 = new Variable();
-//   Variable V3;
-//   //Sub* sub = new Sub();
-//   // V3 = *(sub->operator()(sub,&X,&Y));
-//   // V2 = V1*V1;
-//   // V3 = V2*X;
-  
-//   // V3.genertr-->outputがV3のポインターを指すようにしたい.
-//   V3 = X-Y;
-  
-//   //std::vector<Variable*> vec={V2,V3};
-//   // for(auto item : vec){
-//   //   delete item;
-//   // }
-//   std::cout << sizeof(Variable) << ", " <<sizeof(Function)<< std::endl;
-//   //std::cout << V3.data << std::endl;
-
-//   // V3.backward();
-  
-//   // std::cout << "x = " << X.data << ", x.grad = " << X.grad << std::endl;
-//   // std::cout << "y = " << Y.data << ", y.grad = " << Y.grad << std::endl;
-//   //delete V3.genertr;
-//   //delete sub;
-  
-//   //delete sub;
-//   return 0;
-// }
-
