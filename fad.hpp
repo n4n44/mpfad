@@ -1,5 +1,5 @@
 #include <iostream>
-#include <deque>
+#include <queue>
 #include <unordered_set>
 #include <vector>
 #include <memory>
@@ -7,6 +7,7 @@
 #include <functional>
 #include <math.h>
 #include <mpreal.h>
+#include <gc_cpp.h>
 
 #ifndef FAD_H_
 #define FAD_H_
@@ -22,7 +23,7 @@ auto enumerate(TYPE& inputs);
 
 // std::vector<std::tuple<std::size_t, Variable*>> enumerate(std::vector<Variable*> vec);
 
-class Variable{
+class Variable: public gc{
 public:
   mpreal data;
   mpreal grad;
@@ -31,21 +32,17 @@ public:
   Variable(const double data);
   Variable(const mpreal data);
   Variable();
-
-  ~Variable();
   
   void set_genertr(Function *gen_func);
   void backward();
   //Variable& operator=(const Variable& x);
 };
 
-class Function{
+class Function: public gc{
 public:
   std::vector<Variable*> inputs;
   Variable* output;
   Variable* operator()(Function *self, Variable* input1, Variable* input2);
-
-  ~Function();
 
   virtual mpreal forward()=0;
   virtual std::vector<Variable *>& backward(const mpreal gy)=0;

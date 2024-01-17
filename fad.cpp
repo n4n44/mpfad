@@ -6,6 +6,7 @@
 #include <functional>
 #include <math.h>
 #include <mpreal.h>
+#include <gc_cpp.h>
 
 #include "fad.hpp"
 using mpfr::mpreal;
@@ -64,9 +65,6 @@ Variable::Variable(){
   genertr = nullptr;
 }
 
-Variable::~Variable(){
-  delete genertr;
-}
 
 void Variable::set_genertr(Function *gen_func){
   genertr = gen_func; 
@@ -99,31 +97,25 @@ void Variable::backward(){
     Variable* output = queue.top();
     Function* function = output->genertr;
     mpreal gy = output->grad;
-    std::cout << "output.data "<< output->data  << " output.order " << output->order << std::endl;
     std::vector<Variable*>& gxs = function->backward(gy); //返り値はvector<variable*>
     queue.pop();
-    //std::cout<< "depth " << depth << std::endl;
     for(const auto& [i,gx] : enumerate(gxs)){
       Variable* x = function->inputs[i];
       if(gx == nullptr){
 	continue;
       }
-      //function->whoami();
       std::size_t id_x = std::hash<Variable*>{}(x);
       if(x->genertr != nullptr){
 	if(visited.find(id_x) == visited.end()){
 	  queue.push(x);	
 	}
       }
-      //std::cout<< "gx.data " << gx->data << std::endl;
       if(visited.find(id_x) == visited.end()){
 	x->grad = gx->data;
-	std::cout<< "cp1 " << x->data << ", "<< x->grad<< std::endl;
 	visited.insert(id_x);
       }
       else{
 	x->grad += gx->data;
-	std::cout<< "cp2 " << x->data << ", "<< x->grad << std::endl;
       }
     }
     depth++;
@@ -144,10 +136,6 @@ Variable* Function::operator()(Function *self, Variable* input1, Variable* input
   return output;
 }
 
-Function::~Function(){
-
-}
-
 
 // Addクラスのメソッドの定義
 
@@ -158,7 +146,7 @@ mpreal Add::forward(){
 std::vector<Variable*>& Add::backward(const mpreal gy){
   Variable* d1=new Variable(gy);
   Variable* d2=new Variable(gy);
-  std::vector<Variable*>* ret = new std::vector<Variable*>{d1,d2};
+  std::vector<Variable*>* ret = new(GC) std::vector<Variable*>{d1,d2};
   return *ret;
 }
 
@@ -171,7 +159,7 @@ mpreal Sub::forward(){
 std::vector<Variable*>& Sub::backward(const mpreal gy){
   Variable* d1=new Variable(-1*gy);
   Variable* d2=new Variable(gy);
-  std::vector<Variable*>* ret =new std::vector<Variable*>{d1,d2};
+  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,d2};
   return *ret;
 }
 
@@ -184,7 +172,7 @@ mpreal Mul::forward(){
 std::vector<Variable*>& Mul::backward(const mpreal gy){
   Variable *d1=new Variable(gy*inputs[1]->data);
   Variable *d2=new Variable(gy*inputs[0]->data);
-  std::vector<Variable*>* ret =new std::vector<Variable*>{d1,d2};
+  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,d2};
   return *ret;
 }
 
@@ -197,7 +185,7 @@ mpreal Div::forward(){
 std::vector<Variable*>& Div::backward(const mpreal gy){
   Variable *d1=new Variable(gy/inputs[1]->data);
   Variable *d2=new Variable(-1*gy*inputs[0]->data / ((inputs[1]->data)*(inputs[1]->data)));
-  std::vector<Variable*>* ret =new std::vector<Variable*>{d1,d2};
+  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,d2};
   return *ret;
 }
 
@@ -208,7 +196,7 @@ mpreal Sqrt::forward(){
 
 std::vector<Variable*>& Sqrt::backward(const mpreal gy){
   Variable *d1=new Variable(gy/(2*sqrt(inputs[0]->data)));
-  std::vector<Variable*>* ret =new std::vector<Variable*>{d1,nullptr};
+  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,nullptr};
   return *ret;
 }
 
@@ -219,7 +207,7 @@ mpreal Exp::forward(){
 
 std::vector<Variable*>& Exp::backward(const mpreal gy){
   Variable *d1=new Variable(gy*exp(inputs[0]->data));
-  std::vector<Variable*>* ret =new std::vector<Variable*>{d1,nullptr};
+  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,nullptr};
   return *ret;
 }
 
@@ -230,7 +218,7 @@ mpreal Log::forward(){
 
 std::vector<Variable*>& Log::backward(const mpreal gy){
   Variable *d1=new Variable(gy/inputs[0]->data);
-  std::vector<Variable*>* ret =new std::vector<Variable*>{d1,nullptr};
+  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,nullptr};
   return *ret;
 }
 
@@ -241,7 +229,7 @@ mpreal Sin::forward(){
 
 std::vector<Variable*>& Sin::backward(const mpreal gy){
   Variable *d1=new Variable(gy*cos(inputs[0]->data));
-  std::vector<Variable*>* ret =new std::vector<Variable*>{d1,nullptr};
+  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,nullptr};
   return *ret;
 }
 // Cosクラスの定義
@@ -251,7 +239,7 @@ mpreal Cos::forward(){
 
 std::vector<Variable*>& Cos::backward(const mpreal gy){
   Variable *d1=new Variable(gy*sin(inputs[0]->data));
-  std::vector<Variable*>* ret =new std::vector<Variable*>{d1,nullptr};
+  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,nullptr};
   return *ret;
 }
 
