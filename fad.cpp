@@ -104,17 +104,19 @@ void Variable::backward(){
       if(gx == nullptr){
 	continue;
       }
-      std::size_t id_x = std::hash<Variable*>{}(x);
+      std::size_t id_x = std::hash<Variable*>{}(x);// hashが衝突したらマズイかも
       if(x->genertr != nullptr){
 	if(visited.find(id_x) == visited.end()){
 	  queue.push(x);	
 	}
       }
       if(visited.find(id_x) == visited.end()){
+	std::cout<<"cp1"<<std::endl;
 	x->grad = gx->data;
 	visited.insert(id_x);
       }
       else{
+	std::cout<<"cp2"<<std::endl;
 	x->grad += gx->data;
       }
     }
@@ -264,6 +266,11 @@ Variable& operator/(Variable& op1,Variable& op2){
   Function* div_func =new Div();
   return *(div_func->operator()(div_func, &op1, &op2));
 }
+
+// Variable& operator+(double op1, Variable& op2){
+//   Variable* temp = new Variable(op1);
+//   return temp+op2;
+// }
 
 Variable& exp(Variable& op){
   Function* func =new Exp();
