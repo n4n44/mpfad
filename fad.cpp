@@ -7,7 +7,6 @@
 #include <functional>
 #include <math.h>
 #include <mpreal.h>
-#include <gc_cpp.h>
 
 #include "fad.hpp"
 
@@ -56,10 +55,11 @@ Variable::Variable(){
 }
 
 Variable::~Variable(){
+  std::cout<< "~Variable" << std::endl;
 }
 
-void Variable::set_genertr(std::shared_ptr<Function> gen_func){
-  genertr = gen_func; 
+void Variable::set_genertr(std::unique_ptr<Function>& gen_func){
+  genertr = std::move(gen_func); 
 }
 
 // Variable& Variable::operator=(const Variable& x){
@@ -87,13 +87,14 @@ void Variable::backward(){
 
   while(!queue.empty()){
     auto output = queue.top();
-    auto function = output->genertr;
+    auto function = output->genertr.get();
     mpreal gy = output->grad;
 
     auto& gxs = function->backward(gy); //返り値はvector<variable*>
     queue.pop();
     for(const auto& [i,gx] : enumerate(gxs)){
       auto x = function->inputs[i];
+      
       if(gx == nullptr){
 	continue;
       }
@@ -118,20 +119,19 @@ void Variable::backward(){
 
 // Functionクラスの定義
 
-
-
-std::shared_ptr<Variable> Function::operator()(std::shared_ptr<Function> self, std::shared_ptr<Variable> input1, std::shared_ptr<Variable> input2 = nullptr){
+std::shared_ptr<Variable> Function::operator()(std::unique_ptr<Function>& self,std::shared_ptr<Variable> input1, std::shared_ptr<Variable> input2 = nullptr){
   inputs = {input1, input2};
   int ord = std::max({input1->order, input2->order});
   const mpreal y = forward();
-  output = std::make_shared<Variable>(y);
-  output->set_genertr(self);
-  output->order=ord+1;
-  return output;
+  auto output_entity = std::make_shared<Variable>(y);
+  auto output = std::weak_ptr<Variable>(output_entity);
+  output_entity->set_genertr(self);
+  output_entity->order=ord+1;
+  return output_entity;
 }
 
 Function::~Function(){
-
+  std::cout<< "~Fuction" <<std::endl;
 }
 
 
@@ -144,7 +144,7 @@ mpreal Add::forward(){
 std::vector<std::shared_ptr<Variable>>& Add::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy);
   auto d2=std::make_shared<Variable>(gy);
-  std::vector<std::shared_ptr<Variable>>* ret =new(GC) std::vector<std::shared_ptr<Variable>>{d1,d2};
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
   return *ret;
 }
 
@@ -157,7 +157,7 @@ mpreal Sub::forward(){
 std::vector<std::shared_ptr<Variable>>& Sub::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(-1*gy);
   auto d2=std::make_shared<Variable>(gy);
-  std::vector<std::shared_ptr<Variable>>* ret =new(GC) std::vector<std::shared_ptr<Variable>>{d1,d2};
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
   return *ret;
 }
 
@@ -170,7 +170,7 @@ mpreal Mul::forward(){
 std::vector<std::shared_ptr<Variable>>& Mul::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy*inputs[1]->data);
   auto d2=std::make_shared<Variable>(gy*inputs[0]->data);
-  std::vector<std::shared_ptr<Variable>>* ret =new(GC) std::vector<std::shared_ptr<Variable>>{d1,d2};
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
   return *ret;
 }
 
@@ -183,7 +183,7 @@ mpreal Div::forward(){
 std::vector<std::shared_ptr<Variable>>& Div::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy/inputs[1]->data);
   auto d2=std::make_shared<Variable>(-1*gy*inputs[0]->data / ((inputs[1]->data)*(inputs[1]->data)));
-  std::vector<std::shared_ptr<Variable>>* ret =new(GC) std::vector<std::shared_ptr<Variable>>{d1,d2};
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
   return *ret;
 }
 
@@ -194,7 +194,7 @@ mpreal Sqrt::forward(){
 
 std::vector<std::shared_ptr<Variable>>& Sqrt::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy/(2*sqrt(inputs[0]->data)));
-  std::vector<std::shared_ptr<Variable>>* ret =new(GC) std::vector<std::shared_ptr<Variable>>{d1,nullptr};
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
   return *ret;
 }
 
@@ -205,7 +205,7 @@ mpreal Exp::forward(){
 
 std::vector<std::shared_ptr<Variable>>& Exp::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy*exp(inputs[0]->data));
-  std::vector<std::shared_ptr<Variable>>* ret =new(GC) std::vector<std::shared_ptr<Variable>>{d1,nullptr};
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
   return *ret;
 }
 
@@ -216,7 +216,7 @@ mpreal Log::forward(){
 
 std::vector<std::shared_ptr<Variable>>& Log::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy/inputs[0]->data);
-  std::vector<std::shared_ptr<Variable>>* ret =new(GC) std::vector<std::shared_ptr<Variable>>{d1,nullptr};
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
   return *ret;
 }
 
@@ -227,7 +227,7 @@ mpreal Sin::forward(){
 
 std::vector<std::shared_ptr<Variable>>& Sin::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy*cos(inputs[0]->data));
-  std::vector<std::shared_ptr<Variable>>* ret =new(GC) std::vector<std::shared_ptr<Variable>>{d1,nullptr};
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
   return *ret;
 }
 // Cosクラスの定義
@@ -237,48 +237,66 @@ mpreal Cos::forward(){
 
 std::vector<std::shared_ptr<Variable>>& Cos::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy*sin(inputs[0]->data));
-  std::vector<std::shared_ptr<Variable>>* ret =new(GC) std::vector<std::shared_ptr<Variable>>{d1,nullptr};
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
   return *ret;
 }
 
 // 演算子オーバーロード
 
-std::shared_ptr<Variable>& operator+(std::shared_ptr<Variable>& op1,std::shared_ptr<Variable>& op2){
-  auto add_func =std::make_shared<Add>();
-  return *(add_func->operator()(add_func, op1, op2));
+std::shared_ptr<Variable> operator+(std::shared_ptr<Variable>& op1,std::shared_ptr<Variable>& op2){
+  std::unique_ptr<Function> func =std::make_unique<Add>();
+  return func->operator()(func,op1, op2);
 }
 
-Variable& operator-(Variable& op1,Variable& op2){
-  auto sub_func =std::make_shared<Sub>();
-  return *(sub_func->operator()(sub_func, &op1, &op2));
+std::shared_ptr<Variable> operator-(std::shared_ptr<Variable>& op1,std::shared_ptr<Variable>& op2){
+  std::unique_ptr<Function> func =std::make_unique<Sub>();
+  return func->operator()(func,op1, op2);
 }
 
-Variable& operator*(Variable& op1, Variable& op2){
-  auto mul_func =std::make_shared<Mul>();
-  return *(mul_func->operator()(mul_func, &op1, &op2));
+
+std::shared_ptr<Variable> operator*(std::shared_ptr<Variable>& op1,std::shared_ptr<Variable>& op2){
+  std::unique_ptr<Function> func =std::make_unique<Mul>();
+  return func->operator()(func,op1, op2);
 }
 
-Variable& operator/(Variable& op1,Variable& op2){
-  auto div_func =std::make_shared<Div>();
-  return *(div_func->operator()(div_func, &op1, &op2));
+std::shared_ptr<Variable> operator/(std::shared_ptr<Variable>& op1,std::shared_ptr<Variable>& op2){
+  std::unique_ptr<Function> func =std::make_unique<Div>();
+  return func->operator()(func,op1, op2);
 }
 
-Variable& exp(Variable& op){
-  Function* func =std::make_shared<Exp>();
-  return *(func->operator()(func, &op));
+
+// Variable& operator-(Variable& op1,Variable& op2){
+//   auto sub_func =new Sub();
+//   return *(sub_func->operator()(&op1, &op2));
+// }
+
+// Variable& operator*(Variable& op1, Variable& op2){
+//   auto mul_func =new Mul();
+//   return *(mul_func->operator()(&op1, &op2));
+// }
+
+// Variable& operator/(Variable& op1,Variable& op2){
+//   auto div_func =new Div();
+//   return *(div_func->operator()(&op1, &op2));
+// }
+
+
+std::shared_ptr<Variable> exp(std::shared_ptr<Variable>& op){
+  std::unique_ptr<Function> func =std::make_unique<Exp>();
+  return func->operator()(func,op);
 }
 
-Variable& log(Variable& op){
-  Function* func =std::make_shared<Log>();
-  return *(func->operator()(func, &op));
+std::shared_ptr<Variable>log(std::shared_ptr<Variable>& op){
+  std::unique_ptr<Function> func =std::make_unique<Log>();
+  return func->operator()(func,op);
 }
 
-Variable& sin(Variable& op){
-  Function* func =std::make_shared<Sin>();
-  return *(func->operator()(func, &op));
+std::shared_ptr<Variable> sin(std::shared_ptr<Variable>& op){
+  std::unique_ptr<Function> func =std::make_unique<Sin>();
+  return func->operator()(func, op);
 }
 
-Variable& cos(Variable& op){
-  Function* func =std::make_shared<Cos>();
-  return *(func->operator()(func, &op));
+std::shared_ptr<Variable> cos(std::shared_ptr<Variable>& op){
+  std::unique_ptr<Function> func =std::make_unique<Cos>();
+  return func->operator()(func,op);
 }

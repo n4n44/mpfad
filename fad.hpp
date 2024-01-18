@@ -7,7 +7,6 @@
 #include <functional>
 #include <math.h>
 #include <mpreal.h>
-#include <gc_cpp.h>
 
 #ifndef FAD_H_
 #define FAD_H_
@@ -22,12 +21,19 @@ template <typename TYPE>
 auto enumerate(TYPE& inputs);
 
 // std::vector<std::tuple<std::size_t, Variable*>> enumerate(std::vector<Variable*> vec);
+// class variable: public Variable{
+// public:
+//   std::shared_ptr<Variable>;
+//   std::unique_ptr<Function>;
+//   mpreal grad;
+//   void backward();
+// }
 
 class Variable: public std::enable_shared_from_this<Variable>{
 public:
   mpreal data;
   mpreal grad;
-  std::shared_ptr<Function> genertr;
+  std::unique_ptr<Function> genertr;
   int order;
   Variable(const double data);
   Variable(const mpreal data);
@@ -35,7 +41,7 @@ public:
 
   ~Variable();
   
-  void set_genertr(std::shared_ptr<Function> gen_func);
+  void set_genertr(std::unique_ptr<Function>& gen_func);
   void backward();
   //Variable& operator=(const Variable& x);
 };
@@ -44,7 +50,7 @@ class Function: public std::enable_shared_from_this<Function>{
 public:
   std::vector<std::shared_ptr<Variable>> inputs;
   std::shared_ptr<Variable> output;
-  std::shared_ptr<Variable> operator()(std::shared_ptr<Function> self, std::shared_ptr<Variable> input1, std::shared_ptr<Variable> input2);
+  std::shared_ptr<Variable> operator()(std::unique_ptr<Function>& self,std::shared_ptr<Variable> input1, std::shared_ptr<Variable> input2);
 
   ~Function();
 
@@ -106,23 +112,23 @@ class Cos : public Function{
   std::vector<std::shared_ptr<Variable>>& backward(const mpreal gy);
 };
 
-Variable& operator+(Variable& op1,Variable& op2);
+std::shared_ptr<Variable> operator+(std::shared_ptr<Variable>& lhs, std::shared_ptr<Variable>& rhs);
 
-Variable& operator-(Variable& op1,Variable& op2);
+std::shared_ptr<Variable> operator-(std::shared_ptr<Variable>& lhs, std::shared_ptr<Variable>& rhs);
 
-Variable& operator*(Variable& op1,Variable& op2);
+std::shared_ptr<Variable> operator*(std::shared_ptr<Variable>& lhs, std::shared_ptr<Variable>& rhs);
 
-Variable& operator/(Variable& op1,Variable& op2);
+std::shared_ptr<Variable> operator/(std::shared_ptr<Variable>& lhs, std::shared_ptr<Variable>& rhs);
 
-Variable& sqrt(Variable& op);
+std::shared_ptr<Variable> sqrt(std::shared_ptr<Variable>& op);
 
-Variable& exp(Variable& op);
+std::shared_ptr<Variable> exp(std::shared_ptr<Variable>& op);
 
-Variable& sin(Variable& op);
+std::shared_ptr<Variable> sin(std::shared_ptr<Variable>& op);
 
-Variable& cos(Variable& op);
+std::shared_ptr<Variable> log(std::shared_ptr<Variable>& op);
 
-Variable& log(Variable& op);
+std::shared_ptr<Variable> cos(std::shared_ptr<Variable>& op);
 
 #endif
 
