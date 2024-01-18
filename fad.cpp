@@ -55,7 +55,7 @@ Variable::Variable(){
 }
 
 Variable::~Variable(){
-  std::cout<< "~Variable" << std::endl;
+  // std::cout<< "~Variable" << std::endl;
 }
 
 void Variable::set_genertr(std::unique_ptr<Function>& gen_func){
@@ -113,7 +113,8 @@ void Variable::backward(){
 	x->grad += gx->data;
       }
     }
-    depth++;
+    delete &gxs;
+    
   }
 }
 
@@ -131,7 +132,7 @@ std::shared_ptr<Variable> Function::operator()(std::unique_ptr<Function>& self,s
 }
 
 Function::~Function(){
-  std::cout<< "~Fuction" <<std::endl;
+  // std::cout<< "~Fuction" <<std::endl;
 }
 
 
@@ -227,7 +228,7 @@ mpreal Sin::forward(){
 
 std::vector<std::shared_ptr<Variable>>& Sin::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy*cos(inputs[0]->data));
-  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
+  std::vector<std::shared_ptr<Variable>>* ret = new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
   return *ret;
 }
 // Cosクラスの定義
