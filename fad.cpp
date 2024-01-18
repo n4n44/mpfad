@@ -111,12 +111,10 @@ void Variable::backward(){
 	}
       }
       if(visited.find(id_x) == visited.end()){
-	std::cout<<"cp1"<<std::endl;
 	x->grad = gx->data;
 	visited.insert(id_x);
       }
       else{
-	std::cout<<"cp2"<<std::endl;
 	x->grad += gx->data;
       }
     }
