@@ -20,16 +20,10 @@ template <typename TYPE>
 auto enumerate(TYPE& inputs){
   std::vector<std::pair<std::size_t, decltype(*std::begin(inputs))&>> enumerated;
   std::size_t index = 0;
-  for(auto& item : inputs){
-    //std::cout<< index << ", " << item << std::endl;
-    
+  for(auto& item : inputs){    
     enumerated.emplace_back(index, item);
     //auto& itemと書かないと2つとも同じポインタが格納される. なんで?
-    //enumerated.emplace_back(index, inputs[index]);
     index++;
-
-    // std::for_each(enumerated.begin(), enumerated.end(), [](decltype(enumerated[0]) x) {
-    //std::cout <<"test " <<x.first << ',' << x.second << std::endl;});
   }
   
   return enumerated;
@@ -79,7 +73,7 @@ void Variable::backward(){
 		   return a->order < b->order;
 		 };
   
-  std::unordered_set<size_t> visited;
+  std::unordered_set<std::shared_ptr<Variable>> visited;
   std::priority_queue<std::shared_ptr<Variable>, std::vector<std::shared_ptr<Variable>>, decltype(compare)> queue{compare};
   queue.push(shared_from_this());
 
@@ -98,16 +92,16 @@ void Variable::backward(){
       if(gx == nullptr){
 	continue;
       }
-      std::size_t id_x = std::hash<decltype(x)>{}(x);
+      //std::size_t id_x = std::hash<decltype(x)>{}(x);
       if(x->genertr != nullptr){
-	if(visited.find(id_x) == visited.end()){
+	if(visited.find(x) == visited.end()){
 	  queue.push(x);	
 	}
       }
-      if(visited.find(id_x) == visited.end()){
+      if(visited.find(x) == visited.end()){
 	x->grad = gx->data;
 	
-	visited.insert(id_x);
+	visited.insert(x);
       }
       else{
 	x->grad += gx->data;
@@ -156,8 +150,8 @@ mpreal Sub::forward(){
 }
 
 std::vector<std::shared_ptr<Variable>>& Sub::backward(const mpreal gy){
-  auto d1=std::make_shared<Variable>(-1*gy);
-  auto d2=std::make_shared<Variable>(gy);
+  auto d1=std::make_shared<Variable>(gy);
+  auto d2=std::make_shared<Variable>(-1*gy);
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
   return *ret;
 }
@@ -243,61 +237,91 @@ std::vector<std::shared_ptr<Variable>>& Cos::backward(const mpreal gy){
 }
 
 // 演算子オーバーロード
+// constで渡さないとX*X*Xみたいな形で使えない．なんで？
 
-std::shared_ptr<Variable> operator+(std::shared_ptr<Variable>& op1,std::shared_ptr<Variable>& op2){
+std::shared_ptr<Variable> operator+(const std::shared_ptr<Variable>& op1,const std::shared_ptr<Variable>& op2){
   std::unique_ptr<Function> func =std::make_unique<Add>();
   return func->operator()(func,op1, op2);
 }
 
-std::shared_ptr<Variable> operator-(std::shared_ptr<Variable>& op1,std::shared_ptr<Variable>& op2){
+std::shared_ptr<Variable> operator-(const std::shared_ptr<Variable>& op1,const std::shared_ptr<Variable>& op2){
   std::unique_ptr<Function> func =std::make_unique<Sub>();
   return func->operator()(func,op1, op2);
 }
 
 
-std::shared_ptr<Variable> operator*(std::shared_ptr<Variable>& op1,std::shared_ptr<Variable>& op2){
+std::shared_ptr<Variable> operator*(const std::shared_ptr<Variable>& op1,const std::shared_ptr<Variable>& op2){
   std::unique_ptr<Function> func =std::make_unique<Mul>();
   return func->operator()(func,op1, op2);
 }
 
-std::shared_ptr<Variable> operator/(std::shared_ptr<Variable>& op1,std::shared_ptr<Variable>& op2){
+std::shared_ptr<Variable> operator/(const std::shared_ptr<Variable>& op1,const std::shared_ptr<Variable>& op2){
   std::unique_ptr<Function> func =std::make_unique<Div>();
   return func->operator()(func,op1, op2);
 }
 
+std::shared_ptr<Variable> operator+(const mpreal& lhs, const std::shared_ptr<Variable>& rhs){
+  auto lhs_ptr = std::make_shared<Variable>(lhs);
+  return operator+(lhs_ptr,rhs);
+}
 
-// Variable& operator-(Variable& op1,Variable& op2){
-//   auto sub_func =new Sub();
-//   return *(sub_func->operator()(&op1, &op2));
-// }
+std::shared_ptr<Variable> operator-(const mpreal& lhs, const std::shared_ptr<Variable>& rhs){
+  auto lhs_ptr = std::make_shared<Variable>(lhs);
+  return operator-(lhs_ptr,rhs);
+}
 
-// Variable& operator*(Variable& op1, Variable& op2){
-//   auto mul_func =new Mul();
-//   return *(mul_func->operator()(&op1, &op2));
-// }
+std::shared_ptr<Variable> operator*(const mpreal& lhs, const std::shared_ptr<Variable>& rhs){
+  auto lhs_ptr = std::make_shared<Variable>(lhs);
+  return operator*(lhs_ptr,rhs);
 
-// Variable& operator/(Variable& op1,Variable& op2){
-//   auto div_func =new Div();
-//   return *(div_func->operator()(&op1, &op2));
-// }
+}
 
+std::shared_ptr<Variable> operator/(const mpreal& lhs, const std::shared_ptr<Variable>& rhs){
+  auto lhs_ptr = std::make_shared<Variable>(lhs);
+  return operator/(lhs_ptr,rhs);
+}
 
-std::shared_ptr<Variable> exp(std::shared_ptr<Variable>& op){
+std::shared_ptr<Variable> operator+(const double& lhs, const std::shared_ptr<Variable>& rhs){
+  mpreal lhs_mpreal(lhs);
+  return operator+(lhs_mpreal,rhs);
+}
+
+std::shared_ptr<Variable> operator-(const double& lhs, const std::shared_ptr<Variable>& rhs){
+  mpreal lhs_mpreal(lhs);
+  return operator-(lhs_mpreal,rhs);
+}
+
+std::shared_ptr<Variable> operator*(const double& lhs, const std::shared_ptr<Variable>& rhs){
+  mpreal lhs_mpreal(lhs);
+  return operator*(lhs_mpreal,rhs);
+}
+
+std::shared_ptr<Variable> operator/(const double& lhs, const std::shared_ptr<Variable>& rhs){
+  mpreal lhs_mpreal(lhs);
+  return operator/(lhs_mpreal,rhs);
+}
+
+std::shared_ptr<Variable> sqrt(const std::shared_ptr<Variable>& op){
+  std::unique_ptr<Function> func =std::make_unique<Sqrt>();
+  return func->operator()(func,op);
+}
+
+std::shared_ptr<Variable> exp(const std::shared_ptr<Variable>& op){
   std::unique_ptr<Function> func =std::make_unique<Exp>();
   return func->operator()(func,op);
 }
 
-std::shared_ptr<Variable>log(std::shared_ptr<Variable>& op){
+std::shared_ptr<Variable>log(const std::shared_ptr<Variable>& op){
   std::unique_ptr<Function> func =std::make_unique<Log>();
   return func->operator()(func,op);
 }
 
-std::shared_ptr<Variable> sin(std::shared_ptr<Variable>& op){
+std::shared_ptr<Variable> sin(const std::shared_ptr<Variable>& op){
   std::unique_ptr<Function> func =std::make_unique<Sin>();
   return func->operator()(func, op);
 }
 
-std::shared_ptr<Variable> cos(std::shared_ptr<Variable>& op){
+std::shared_ptr<Variable> cos(const std::shared_ptr<Variable>& op){
   std::unique_ptr<Function> func =std::make_unique<Cos>();
   return func->operator()(func,op);
 }
