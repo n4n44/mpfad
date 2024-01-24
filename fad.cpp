@@ -188,8 +188,8 @@ std::vector<std::shared_ptr<Variable>>& Mul::backward(const mpreal gy){
 }
 
 std::vector<std::shared_ptr<Variable>>& Mul::auto_grad(const std::shared_ptr<Variable>& gy){
-  auto d1=std::make_shared<Variable>(inputs[1]->data);
-  auto d2=std::make_shared<Variable>(inputs[0]->data);
+  auto d1= inputs[1];
+  auto d2= inputs[0];
   d1 = d1*gy;
   d2 = d2*gy;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
@@ -211,9 +211,9 @@ std::vector<std::shared_ptr<Variable>>& Div::backward(const mpreal gy){
 
 
 std::vector<std::shared_ptr<Variable>>& Div::auto_grad(const std::shared_ptr<Variable>& gy){
-  auto d1=std::make_shared<Variable>(inputs[1]->data);
+  auto d1= inputs[1];
   d1 = 1/d1;
-  auto d2 = std::make_shared<Variable>(inputs[1]->data);
+  auto d2 = inputs[1];
   d2 = d2*d2;
   d1 = d1*gy;
   d2 = inputs[0]/d2;
@@ -236,7 +236,7 @@ std::vector<std::shared_ptr<Variable>>& Sqrt::backward(const mpreal gy){
 
 
 std::vector<std::shared_ptr<Variable>>& Sqrt::auto_grad(const std::shared_ptr<Variable>& gy){
-  auto d1=std::make_shared<Variable>(inputs[0]->data);
+  auto d1=inputs[0];
   d1 = sqrt(d1);
   d1 = 2*d1;
   d1 = 1/d1;
@@ -258,7 +258,7 @@ std::vector<std::shared_ptr<Variable>>& Exp::backward(const mpreal gy){
 
 
 std::vector<std::shared_ptr<Variable>>& Exp::auto_grad(const std::shared_ptr<Variable>& gy){
-  auto d1=std::make_shared<Variable>(inputs[0]->data);
+  auto d1= inputs[0];
   d1= exp(d1);
   d1 = gy*d1;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
@@ -278,7 +278,7 @@ std::vector<std::shared_ptr<Variable>>& Log::backward(const mpreal gy){
 
 
 std::vector<std::shared_ptr<Variable>>& Log::auto_grad(const std::shared_ptr<Variable>& gy){
-  auto d1 = std::make_shared<Variable>(inputs[0]->data);
+  auto d1 = inputs[0];
   d1=1/d1;
   d1 = gy*d1;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
@@ -298,7 +298,7 @@ std::vector<std::shared_ptr<Variable>>& Sin::backward(const mpreal gy){
 }
 
 std::vector<std::shared_ptr<Variable>>& Sin::auto_grad(const std::shared_ptr<Variable>& gy){
-  auto d1= std::make_shared<Variable>(inputs[0]->data);
+  auto d1= inputs[0];
   d1 = cos(d1);
   d1 = gy*d1;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};

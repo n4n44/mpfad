@@ -26,7 +26,7 @@ auto enumerate(TYPE& inputs){
 
 std::vector<std::shared_ptr<Variable>>& auto_grad(std::shared_ptr<Variable> output, std::vector<std::shared_ptr<Variable>> inputs){
   auto ret = new std::vector<std::shared_ptr<Variable>>;
-  
+  std::vector<std::shared_ptr<Variable>> vault;
   if(output->genertr == nullptr){
     return *ret;
   }
@@ -34,18 +34,19 @@ std::vector<std::shared_ptr<Variable>>& auto_grad(std::shared_ptr<Variable> outp
   auto compare = [](std::shared_ptr<Variable> a, std::shared_ptr<Variable> b){
 		   return a->order < b->order;
 		 };
-  output->grad_variable = std::make_shared<Variable>(output->grad);
+  auto initial_grad = std::make_shared<Variable>(1);
+  vault.push_back(initial_grad);
+  output->grad_variable = std::weak_ptr<Variable>(initial_grad);
   std::unordered_set<std::shared_ptr<Variable>> visited;
   std::priority_queue<std::shared_ptr<Variable>, std::vector<std::shared_ptr<Variable>>, decltype(compare)> queue{compare};
   queue.push(output);
   
-  int depth = 0;
   while(!queue.empty()){
     auto tmp_variable = queue.top();
     auto function = tmp_variable->genertr.get();
     auto gy = tmp_variable->grad_variable;
 
-    auto& gxs = function->auto_grad(gy);
+    auto& gxs = function->auto_grad(std::shared_ptr<Variable>(gy));
     queue.pop();
     for(const auto& [i,gx] : enumerate(gxs)){
       auto x = function->inputs[i];
@@ -59,18 +60,20 @@ std::vector<std::shared_ptr<Variable>>& auto_grad(std::shared_ptr<Variable> outp
 	}
       }
       if(visited.find(x) == visited.end()){
-	x->grad_variable = gx;
-	
+	vault.push_back(gx);
+	x->grad_variable = std::weak_ptr<Variable>(gx);
 	visited.insert(x);
       }
       else{
-	x->grad_variable = x->grad_variable + gx;
+	auto tmp = std::shared_ptr<Variable>(x->grad_variable) + gx;
+	vault.push_back(tmp);
+	x->grad_variable = std::weak_ptr<Variable>(tmp);
       }
     }
     delete &gxs;
   }
   for(auto item : inputs){
-    ret->push_back(item->grad_variable);
+    ret->push_back(std::shared_ptr<Variable>(item->grad_variable));
   }
   return *ret;
 }
