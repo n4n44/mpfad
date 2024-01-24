@@ -49,7 +49,6 @@ std::vector<std::shared_ptr<Variable>>& auto_grad(std::shared_ptr<Variable> outp
     queue.pop();
     for(const auto& [i,gx] : enumerate(gxs)){
       auto x = function->inputs[i];
-      
       if(gx == nullptr){
 	continue;
       }
@@ -68,7 +67,7 @@ std::vector<std::shared_ptr<Variable>>& auto_grad(std::shared_ptr<Variable> outp
 	x->grad_variable = x->grad_variable + gx;
       }
     }
-    delete &gxs;    
+    delete &gxs;
   }
   for(auto item : inputs){
     ret->push_back(item->grad_variable);
