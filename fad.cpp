@@ -84,7 +84,7 @@ void Variable::backward(){
     auto function = output->genertr.get();
     mpreal gy = output->grad;
 
-    auto& gxs = function->backward(gy); //返り値はvector<variable*>
+    auto& gxs = function->backward(gy);
     queue.pop();
     for(const auto& [i,gx] : enumerate(gxs)){
       auto x = function->inputs[i];
@@ -143,6 +143,15 @@ std::vector<std::shared_ptr<Variable>>& Add::backward(const mpreal gy){
   return *ret;
 }
 
+std::vector<std::shared_ptr<Variable>>& Add::auto_grad(const std::shared_ptr<Variable>& gy){
+  auto d1=std::make_shared<Variable>(1);
+  auto d2=std::make_shared<Variable>(1);
+  d1 = d1*gy;
+  d2 = d2*gy;
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
+  return *ret;
+}
+
 // Subクラスのメソッドの定義
 
 mpreal Sub::forward(){
@@ -152,6 +161,15 @@ mpreal Sub::forward(){
 std::vector<std::shared_ptr<Variable>>& Sub::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy);
   auto d2=std::make_shared<Variable>(-1*gy);
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
+  return *ret;
+}
+
+std::vector<std::shared_ptr<Variable>>& Sub::auto_grad(const std::shared_ptr<Variable>& gy){
+  auto d1=std::make_shared<Variable>(1);
+  auto d2=std::make_shared<Variable>(-1);
+  d1 = d1*gy;
+  d2 = d2*gy;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
   return *ret;
 }
@@ -169,6 +187,15 @@ std::vector<std::shared_ptr<Variable>>& Mul::backward(const mpreal gy){
   return *ret;
 }
 
+std::vector<std::shared_ptr<Variable>>& Mul::auto_grad(const std::shared_ptr<Variable>& gy){
+  auto d1=inputs[1];
+  auto d2=inputs[0];
+  d1 = d1*gy;
+  d2 = d2*gy;
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
+  return *ret;
+}
+
 // Divクラスのメソッドの定義
 
 mpreal Div::forward(){
@@ -178,6 +205,18 @@ mpreal Div::forward(){
 std::vector<std::shared_ptr<Variable>>& Div::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy/inputs[1]->data);
   auto d2=std::make_shared<Variable>(-1*gy*inputs[0]->data / ((inputs[1]->data)*(inputs[1]->data)));
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
+  return *ret;
+}
+
+
+std::vector<std::shared_ptr<Variable>>& Div::auto_grad(const std::shared_ptr<Variable>& gy){
+  auto d1=1/inputs[1];
+  auto d2=inputs[1]*inputs[1];
+  d1 = d1*gy;
+  d2 = inputs[0]/d2;
+  d2 = -1*d2;
+  d2 = gy*d2;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
   return *ret;
 }
@@ -193,6 +232,16 @@ std::vector<std::shared_ptr<Variable>>& Sqrt::backward(const mpreal gy){
   return *ret;
 }
 
+
+std::vector<std::shared_ptr<Variable>>& Sqrt::auto_grad(const std::shared_ptr<Variable>& gy){
+  auto d1=sqrt(inputs[0]);
+  d1 = 2*d1;
+  d1 = 1/d1;
+  d1 = gy*d1;
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
+  return *ret;
+}
+
 // Expクラスの定義
 mpreal Exp::forward(){
   return exp(inputs[0]->data);
@@ -200,6 +249,14 @@ mpreal Exp::forward(){
 
 std::vector<std::shared_ptr<Variable>>& Exp::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy*exp(inputs[0]->data));
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
+  return *ret;
+}
+
+
+std::vector<std::shared_ptr<Variable>>& Exp::auto_grad(const std::shared_ptr<Variable>& gy){
+  auto d1=exp(inputs[0]);
+  d1 = gy*d1;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
   return *ret;
 }
@@ -215,6 +272,15 @@ std::vector<std::shared_ptr<Variable>>& Log::backward(const mpreal gy){
   return *ret;
 }
 
+
+std::vector<std::shared_ptr<Variable>>& Log::auto_grad(const std::shared_ptr<Variable>& gy){
+  auto d1=1/inputs[0];
+  d1 = gy*d1;
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
+  return *ret;
+
+}
+
 // Sinクラスの定義
 mpreal Sin::forward(){
   return exp(inputs[0]->data);
@@ -225,13 +291,29 @@ std::vector<std::shared_ptr<Variable>>& Sin::backward(const mpreal gy){
   std::vector<std::shared_ptr<Variable>>* ret = new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
   return *ret;
 }
+
+std::vector<std::shared_ptr<Variable>>& Sin::auto_grad(const std::shared_ptr<Variable>& gy){
+  auto d1=cos(inputs[0]);
+  d1 = gy*d1;
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
+  return *ret;
+}
+
 // Cosクラスの定義
 mpreal Cos::forward(){
-  return exp(inputs[0]->data);
+  return cos(inputs[0]->data);
 }
 
 std::vector<std::shared_ptr<Variable>>& Cos::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy*sin(inputs[0]->data));
+  std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
+  return *ret;
+}
+
+
+std::vector<std::shared_ptr<Variable>>& Cos::auto_grad(const std::shared_ptr<Variable>& gy){
+  auto d1=sin(inputs[0]);
+  d1 = gy*d1;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
   return *ret;
 }
@@ -325,3 +407,4 @@ std::shared_ptr<Variable> cos(const std::shared_ptr<Variable>& op){
   std::unique_ptr<Function> func =std::make_unique<Cos>();
   return func->operator()(func,op);
 }
+
