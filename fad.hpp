@@ -25,7 +25,7 @@ public:
   mpreal grad;
   std::unique_ptr<Function> genertr;
   int order;
-  std::shared_ptr<Variable> grad_variable;
+  std::weak_ptr<Variable> grad_variable;
   Variable(const double data);
   Variable(const mpreal data);
   Variable();
@@ -154,5 +154,7 @@ std::shared_ptr<Variable> sin(const std::shared_ptr<Variable>& op);
 std::shared_ptr<Variable> log(const std::shared_ptr<Variable>& op);
 
 std::shared_ptr<Variable> cos(const std::shared_ptr<Variable>& op);
+
+void zero_grad(std::vector<std::shared_ptr<Variable>>& inputs);
 
 #endif

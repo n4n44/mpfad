@@ -415,3 +415,10 @@ std::shared_ptr<Variable> cos(const std::shared_ptr<Variable>& op){
   return func->operator()(func,op);
 }
 
+void zero_grad(std::vector<std::shared_ptr<Variable>>& inputs){
+  auto constant_0 = std::make_shared<Variable>(0);
+  for(auto& item: inputs){
+    item->grad=0;
+    item->grad_variable=std::weak_ptr<Variable>(constant_0);
+  }
+}

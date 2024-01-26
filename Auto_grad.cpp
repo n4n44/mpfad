@@ -65,10 +65,11 @@ std::vector<std::shared_ptr<Variable>>& auto_grad(std::shared_ptr<Variable> outp
 	visited.insert(x);
       }
       else{
-	auto tmp = std::shared_ptr<Variable>(x->grad_variable) + gx;
+	auto tmp = (std::shared_ptr<Variable>(x->grad_variable) + gx);
 	vault.push_back(tmp);
 	x->grad_variable = std::weak_ptr<Variable>(tmp);
       }
+
     }
     delete &gxs;
   }
