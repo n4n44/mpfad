@@ -20,13 +20,7 @@ class Function;
 template <typename TYPE>
 auto enumerate(TYPE& inputs);
 
-<<<<<<< HEAD
-// std::vector<std::tuple<std::size_t, Variable*>> enumerate(std::vector<Variable*> vec);
-
-class Variable: public gc{
-=======
 class Variable: public std::enable_shared_from_this<Variable>{
->>>>>>> shared_ptr
 public:
   mpreal data;
   mpreal grad;
@@ -41,11 +35,8 @@ public:
   void backward();
 };
 
-<<<<<<< HEAD
-class Function: public gc{
-=======
+
 class Function: public std::enable_shared_from_this<Function>{
->>>>>>> shared_ptr
 public:
   std::vector<std::shared_ptr<Variable>> inputs;
   std::weak_ptr<Variable> output;

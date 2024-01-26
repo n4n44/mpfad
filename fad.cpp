@@ -49,12 +49,6 @@ Variable::Variable(){
   genertr = nullptr;
 }
 
-<<<<<<< HEAD
-=======
-Variable::~Variable(){
-  // std::cout<< "~Variable" << std::endl;
-}
->>>>>>> shared_ptr
 
 void Variable::set_genertr(std::unique_ptr<Function>& gen_func){
   genertr = std::move(gen_func); 
@@ -87,12 +81,8 @@ void Variable::backward(){
     auto output = queue.top();
     auto function = output->genertr.get();
     mpreal gy = output->grad;
-<<<<<<< HEAD
-    std::vector<Variable*>& gxs = function->backward(gy); //返り値はvector<variable*>
-=======
 
     auto& gxs = function->backward(gy);
->>>>>>> shared_ptr
     queue.pop();
     for(const auto& [i,gx] : enumerate(gxs)){
       auto x = function->inputs[i];
@@ -100,26 +90,16 @@ void Variable::backward(){
       if(gx == nullptr){
 	continue;
       }
-<<<<<<< HEAD
-      std::size_t id_x = std::hash<Variable*>{}(x);// hashが衝突したらマズイかも
-=======
       //std::size_t id_x = std::hash<decltype(x)>{}(x);
->>>>>>> shared_ptr
       if(x->genertr != nullptr){
 	if(visited.find(x) == visited.end()){
 	  queue.push(x);	
 	}
       }
-<<<<<<< HEAD
-      if(visited.find(id_x) == visited.end()){
-	x->grad = gx->data;
-	visited.insert(id_x);
-=======
       if(visited.find(x) == visited.end()){
 	x->grad = gx->data;
 	
 	visited.insert(x);
->>>>>>> shared_ptr
       }
       else{
 	x->grad += gx->data;
@@ -143,13 +123,6 @@ std::shared_ptr<Variable> Function::operator()(std::unique_ptr<Function>& self,s
   return output_entity;
 }
 
-<<<<<<< HEAD
-=======
-Function::~Function(){
-  // std::cout<< "~Fuction" <<std::endl;
-}
-
->>>>>>> shared_ptr
 
 // Addクラスのメソッドの定義
 
@@ -157,12 +130,6 @@ mpreal Add::forward(){
   return inputs[0]->data + inputs[1]->data;
 }
 
-<<<<<<< HEAD
-std::vector<Variable*>& Add::backward(const mpreal gy){
-  Variable* d1=new Variable(gy);
-  Variable* d2=new Variable(gy);
-  std::vector<Variable*>* ret = new(GC) std::vector<Variable*>{d1,d2};
-=======
 std::vector<std::shared_ptr<Variable>>& Add::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy);
   auto d2=std::make_shared<Variable>(gy);
@@ -176,7 +143,6 @@ std::vector<std::shared_ptr<Variable>>& Add::auto_grad(const std::shared_ptr<Var
   d1 = d1*gy;
   d2 = d2*gy;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
->>>>>>> shared_ptr
   return *ret;
 }
 
@@ -186,12 +152,6 @@ mpreal Sub::forward(){
   return inputs[0]->data - inputs[1]->data;
 }
 
-<<<<<<< HEAD
-std::vector<Variable*>& Sub::backward(const mpreal gy){
-  Variable* d1=new Variable(-1*gy);
-  Variable* d2=new Variable(gy);
-  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,d2};
-=======
 std::vector<std::shared_ptr<Variable>>& Sub::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy);
   auto d2=std::make_shared<Variable>(-1*gy);
@@ -205,7 +165,6 @@ std::vector<std::shared_ptr<Variable>>& Sub::auto_grad(const std::shared_ptr<Var
   d1 = d1*gy;
   d2 = d2*gy;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
->>>>>>> shared_ptr
   return *ret;
 }
 
@@ -215,12 +174,6 @@ mpreal Mul::forward(){
   return inputs[0]->data * inputs[1]->data;
 }
 
-<<<<<<< HEAD
-std::vector<Variable*>& Mul::backward(const mpreal gy){
-  Variable *d1=new Variable(gy*inputs[1]->data);
-  Variable *d2=new Variable(gy*inputs[0]->data);
-  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,d2};
-=======
 std::vector<std::shared_ptr<Variable>>& Mul::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy*inputs[1]->data);
   auto d2=std::make_shared<Variable>(gy*inputs[0]->data);
@@ -234,7 +187,6 @@ std::vector<std::shared_ptr<Variable>>& Mul::auto_grad(const std::shared_ptr<Var
   d1 = d1*gy;
   d2 = d2*gy;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
->>>>>>> shared_ptr
   return *ret;
 }
 
@@ -244,12 +196,6 @@ mpreal Div::forward(){
   return inputs[0]->data/inputs[1]->data;
 }
 
-<<<<<<< HEAD
-std::vector<Variable*>& Div::backward(const mpreal gy){
-  Variable *d1=new Variable(gy/inputs[1]->data);
-  Variable *d2=new Variable(-1*gy*inputs[0]->data / ((inputs[1]->data)*(inputs[1]->data)));
-  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,d2};
-=======
 std::vector<std::shared_ptr<Variable>>& Div::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy/inputs[1]->data);
   auto d2=std::make_shared<Variable>(-1*gy*inputs[0]->data / ((inputs[1]->data)*(inputs[1]->data)));
@@ -268,7 +214,6 @@ std::vector<std::shared_ptr<Variable>>& Div::auto_grad(const std::shared_ptr<Var
   d2 = -1*d2;
   d2 = gy*d2;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,d2};
->>>>>>> shared_ptr
   return *ret;
 }
 
@@ -277,11 +222,6 @@ mpreal Sqrt::forward(){
   return sqrt(inputs[0]->data);
 }
 
-<<<<<<< HEAD
-std::vector<Variable*>& Sqrt::backward(const mpreal gy){
-  Variable *d1=new Variable(gy/(2*sqrt(inputs[0]->data)));
-  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,nullptr};
-=======
 std::vector<std::shared_ptr<Variable>>& Sqrt::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy/(2*sqrt(inputs[0]->data)));
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
@@ -296,7 +236,6 @@ std::vector<std::shared_ptr<Variable>>& Sqrt::auto_grad(const std::shared_ptr<Va
   d1 = 1/d1;
   d1 = gy*d1;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
->>>>>>> shared_ptr
   return *ret;
 }
 
@@ -305,11 +244,6 @@ mpreal Exp::forward(){
   return exp(inputs[0]->data);
 }
 
-<<<<<<< HEAD
-std::vector<Variable*>& Exp::backward(const mpreal gy){
-  Variable *d1=new Variable(gy*exp(inputs[0]->data));
-  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,nullptr};
-=======
 std::vector<std::shared_ptr<Variable>>& Exp::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy*exp(inputs[0]->data));
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
@@ -322,7 +256,6 @@ std::vector<std::shared_ptr<Variable>>& Exp::auto_grad(const std::shared_ptr<Var
   d1= exp(d1);
   d1 = gy*d1;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
->>>>>>> shared_ptr
   return *ret;
 }
 
@@ -330,12 +263,6 @@ std::vector<std::shared_ptr<Variable>>& Exp::auto_grad(const std::shared_ptr<Var
 mpreal Log::forward(){
   return exp(inputs[0]->data);
 }
-
-<<<<<<< HEAD
-std::vector<Variable*>& Log::backward(const mpreal gy){
-  Variable *d1=new Variable(gy/inputs[0]->data);
-  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,nullptr};
-=======
 std::vector<std::shared_ptr<Variable>>& Log::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy/inputs[0]->data);
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
@@ -348,7 +275,6 @@ std::vector<std::shared_ptr<Variable>>& Log::auto_grad(const std::shared_ptr<Var
   d1=1/d1;
   d1 = gy*d1;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
->>>>>>> shared_ptr
   return *ret;
 
 }
@@ -358,15 +284,9 @@ mpreal Sin::forward(){
   return exp(inputs[0]->data);
 }
 
-<<<<<<< HEAD
-std::vector<Variable*>& Sin::backward(const mpreal gy){
-  Variable *d1=new Variable(gy*cos(inputs[0]->data));
-  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,nullptr};
-=======
 std::vector<std::shared_ptr<Variable>>& Sin::backward(const mpreal gy){
   auto d1=std::make_shared<Variable>(gy*cos(inputs[0]->data));
   std::vector<std::shared_ptr<Variable>>* ret = new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
->>>>>>> shared_ptr
   return *ret;
 }
 
@@ -389,18 +309,11 @@ std::vector<std::shared_ptr<Variable>>& Cos::backward(const mpreal gy){
   return *ret;
 }
 
-<<<<<<< HEAD
-std::vector<Variable*>& Cos::backward(const mpreal gy){
-  Variable *d1=new Variable(gy*sin(inputs[0]->data));
-  std::vector<Variable*>* ret =new(GC) std::vector<Variable*>{d1,nullptr};
-=======
-
 std::vector<std::shared_ptr<Variable>>& Cos::auto_grad(const std::shared_ptr<Variable>& gy){
   auto d1 = std::make_shared<Variable>(inputs[0]->data);
   d1=sin(d1);
   d1 = gy*d1;
   std::vector<std::shared_ptr<Variable>>* ret =new std::vector<std::shared_ptr<Variable>>{d1,nullptr};
->>>>>>> shared_ptr
   return *ret;
 }
 
@@ -428,16 +341,6 @@ std::shared_ptr<Variable> operator/(const std::shared_ptr<Variable>& op1,const s
   return func->operator()(func,op1, op2);
 }
 
-<<<<<<< HEAD
-// Variable& operator+(double op1, Variable& op2){
-//   Variable* temp = new Variable(op1);
-//   return temp+op2;
-// }
-
-Variable& exp(Variable& op){
-  Function* func =new Exp();
-  return *(func->operator()(func, &op));
-=======
 std::shared_ptr<Variable> operator+(const mpreal& lhs, const std::shared_ptr<Variable>& rhs){
   auto lhs_ptr = std::make_shared<Variable>(lhs);
   return operator+(lhs_ptr,rhs);
@@ -452,7 +355,6 @@ std::shared_ptr<Variable> operator*(const mpreal& lhs, const std::shared_ptr<Var
   auto lhs_ptr = std::make_shared<Variable>(lhs);
   return operator*(lhs_ptr,rhs);
 
->>>>>>> shared_ptr
 }
 
 std::shared_ptr<Variable> operator/(const mpreal& lhs, const std::shared_ptr<Variable>& rhs){
