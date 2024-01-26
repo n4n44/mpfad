@@ -1,0 +1,57 @@
+#include <iostream>
+#include <queue>
+#include <unordered_set>
+#include <vector>
+#include <tuple>
+#include <functional>
+#include <math.h>
+#include <mpreal.h>
+#include <memory>
+#include "fad.hpp"
+
+std::vector<std::shared_ptr<Variable>>& auto_grad(std::shared_ptr<Variable> output, std::vector<std::shared_ptr<Variable>> inputs){
+  if(genertr == nullptr){
+    return;
+  }
+  
+  auto compare = [](std::shared_ptr<Variable>> a, std::shared_ptr<Variable> b){
+		   return a->order < b->order;
+		 };
+  shared_from_this()->grad_variable = std::make_shared<Variable>(shared_from_this()->grad);
+  std::unordered_set<std::shared_ptr<Variable>> visited;
+  std::priority_queue<std::shared_ptr<Variable>, std::vector<std::shared_ptr<Variable>>, decltype(compare)> queue{compare};
+  queue.push(shared_from_this());
+  
+  int depth = 0;
+  while(!queue.empty()){
+    auto output = queue.top();
+    auto function = output->genertr.get();
+    auto gy = output->grad_variable;
+
+    auto& gxs = function->Autograd(gy); //返り値はvector<variable*>
+    queue.pop();
+    for(const auto& [i,gx] : enumerate(gxs)){
+      auto x = function->inputs[i];
+      auto x_grad = std::make_shared<Variable>();
+      
+      if(gx == nullptr){
+	continue;
+      }
+      //std::size_t id_x = std::hash<decltype(x)>{}(x);
+      if(x->genertr != nullptr){
+	if(visited.find(x) == visited.end()){
+	  queue.push({x,x_grad});	
+	}
+      }
+      if(visited.find(x) == visited.end()){
+	x->grad_variable = gx;
+	
+	visited.insert(x);
+      }
+      else{
+	x->grad_variable += gx;
+      }
+    }
+    delete &gxs;    
+  }
+}
