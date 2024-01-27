@@ -7,7 +7,6 @@
 #include <functional>
 #include <math.h>
 #include <mpreal.h>
-#include <gc_cpp.h>
 
 #include "fad.hpp"
 
@@ -53,14 +52,6 @@ Variable::Variable(){
 void Variable::set_genertr(std::unique_ptr<Function>& gen_func){
   genertr = std::move(gen_func); 
 }
-
-// Variable& Variable::operator=(const Variable& x){
-//   data = x.data;
-//   grad = x.grad;
-//   genertr = x.genertr;
-//   return *this;
-// }
-
 
 void Variable::backward(){
   if(genertr == nullptr){

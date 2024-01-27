@@ -5,8 +5,8 @@
 #include <tuple>
 #include <functional>
 #include <math.h>
-#include <mpreal.h>
 #include <memory>
+#include <mpreal.h>
 
 #include "fad.hpp"
 #include "Auto_grad.hpp"
@@ -24,12 +24,12 @@ auto enumerate(TYPE& inputs){
   return enumerated;
 }
 
-std::vector<std::shared_ptr<Variable>>& auto_grad(std::shared_ptr<Variable> output, std::vector<std::shared_ptr<Variable>> inputs){
+std::shared_ptr<std::vector<std::shared_ptr<Variable>>> auto_grad(std::shared_ptr<Variable> output, std::vector<std::shared_ptr<Variable>> inputs){
   auto constant_0=std::make_shared<Variable>(0);
   for(auto item: inputs){
     item->grad_variable = std::weak_ptr(constant_0);
   } 
-  auto ret = new std::vector<std::shared_ptr<Variable>>;
+  auto ret = std::shared_ptr<std::vector<std::shared_ptr<Variable>>>(new std::vector<std::shared_ptr<Variable>>);
   std::vector<std::shared_ptr<Variable>> vault;
   if(output->genertr != nullptr){
     auto compare = [](std::shared_ptr<Variable> a, std::shared_ptr<Variable> b){
@@ -78,5 +78,5 @@ std::vector<std::shared_ptr<Variable>>& auto_grad(std::shared_ptr<Variable> outp
   for(auto& item : inputs){
     ret->push_back(std::shared_ptr<Variable>(item->grad_variable));
   }
-  return *ret;
+  return ret;
 }

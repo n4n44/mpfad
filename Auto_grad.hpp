@@ -13,6 +13,6 @@
 #ifndef AUTO_GRAD_H_
 #define AUTO_GRAD_H_
 
-std::vector<std::shared_ptr<Variable>>& auto_grad(std::shared_ptr<Variable> output, std::vector<std::shared_ptr<Variable>> inputs);
+std::shared_ptr<std::vector<std::shared_ptr<Variable>>> auto_grad(std::shared_ptr<Variable> output, std::vector<std::shared_ptr<Variable>> inputs);
 
 #endif
