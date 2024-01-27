@@ -6,7 +6,7 @@
 #include <memory>
 #include <functional>
 #include <cmath>
-#include <mpreal.h>
+#include "mpreal.h"
 
 #include "fad.hpp"
 
