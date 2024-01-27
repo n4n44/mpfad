@@ -5,7 +5,7 @@
 #include <tuple>
 #include <memory>
 #include <functional>
-#include <math.h>
+#include <cmath>
 #include <mpreal.h>
 
 #include "fad.hpp"

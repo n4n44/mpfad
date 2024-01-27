@@ -5,9 +5,8 @@
 #include <memory>
 #include <tuple>
 #include <functional>
-#include <math.h>
+#include <cmath>
 #include <mpreal.h>
-#include <gc_cpp.h>
 
 #ifndef FAD_H_
 #define FAD_H_

@@ -4,7 +4,7 @@
 #include <vector>
 #include <tuple>
 #include <functional>
-#include <math.h>
+#include <cmath>
 #include <mpreal.h>
 #include <memory>
 
